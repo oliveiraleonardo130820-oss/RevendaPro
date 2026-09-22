@@ -1,8 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { Session, createClient } from '@supabase/supabase-js';
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { parseLocalDate } from '@/lib/utils';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -23,7 +24,7 @@ interface AuthContextType {
   }) => Promise<void>;
   registerEmployee: (nome: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: Partial<Pick<Profile, 'name' | 'email' | 'telefone' | 'cidade' | 'bairro' | 'rua' | 'numero' | 'nome_loja' | 'ramo_atividade' | 'plan'>>) => Promise<void>;
+  updateProfile: (data: Partial<Pick<Profile, 'name' | 'email' | 'telefone' | 'cidade' | 'bairro' | 'rua' | 'numero' | 'nome_loja' | 'ramo_atividade'>>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,32 +68,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (profile && !profile.ativo) {
                   console.log('❌ Usuário desativado, fazendo logout');
                   await supabase.auth.signOut();
-                  throw new Error('Usuário desativado.');
+                  return;
                 }
-                
-                // Verificar se assinatura expirou
-                if (profile && profile.data_expiracao_assinatura) {
-                  const today = new Date();
-                  const expirationDate = new Date(profile.data_expiracao_assinatura);
-                  
-                  if (today >= expirationDate && profile.plan !== 'free') {
-                    console.log('⚠️ Assinatura expirada, alterando para plano gratuito');
-                    
-                    // Atualizar plano para gratuito
-                    const { error: updateError } = await supabase
-                      .from('profiles')
-                      .update({ plan: 'free' })
-                      .eq('id', profile.id);
-                    
-                    if (updateError) {
-                      console.error('Erro ao atualizar plano:', updateError);
-                    } else {
-                      profile.plan = 'free';
-                      console.log('✅ Plano alterado para gratuito automaticamente');
-                    }
+
+                // Assinatura expirada: trata como plano gratuito na sessão. A gravação no
+                // banco é feita pela rotina diária check_expired_subscriptions (o cliente
+                // não tem permissão para alterar o próprio plano).
+                if (profile && profile.data_expiracao_assinatura && profile.plan !== 'free') {
+                  const expirationDate = parseLocalDate(profile.data_expiracao_assinatura);
+                  if (new Date() >= expirationDate) {
+                    profile.plan = 'free';
                   }
                 }
-                
+
                 setUser(profile);
               }
             } catch (error) {
@@ -168,112 +156,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const registerEmployee = async (nome: string, email: string, password: string) => {
-    console.log('🔹 AÇÃO 1: INSERIR NA TABELA USUARIOS');
-    console.log('🔐 Dono atual logado:', { 
-      id: user?.id, 
-      tipo: user?.tipo_usuario, 
-      email: user?.email 
-    });
-    
     if (!user || user.tipo_usuario !== 'dono') {
-      console.error('❌ Usuário não é dono:', { user: user?.id, tipo: user?.tipo_usuario });
       throw new Error('Apenas donos podem cadastrar funcionários');
     }
 
-    console.log('✅ Usuário é dono válido, prosseguindo...');
-
-    // Salvar sessão atual do dono
-    const ownerSession = session;
     const ownerId = user.id;
 
-    try {
-      // 🔹 AÇÃO 1: Inserir na tabela usuarios (via profiles)
-      console.log('📝 Inserindo funcionário na tabela usuarios...');
-      console.log('📊 Dados para inserir:', {
-        nome: nome,
-        email: email,
-        tipo_usuario: 'funcionario'
-      });
+    // Cliente isolado, sem persistir sessão: criar o funcionário não pode trocar
+    // nem derrubar a sessão do dono que está logado.
+    const isolatedClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
 
-      // Primeiro criamos o usuário no auth
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: nome,
-            tipo_usuario: 'funcionario',
-            loja_id: ownerId, // ID do dono
-          },
+    const { data: signUpData, error: signUpError } = await isolatedClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: nome,
+          tipo_usuario: 'funcionario',
         },
+      },
+    });
+
+    if (signUpError) throw signUpError;
+    if (!signUpData.user) throw new Error('Falha ao criar usuário');
+
+    // O vínculo do funcionário com a loja é feito pelo trigger do banco quando o
+    // dono (sessão normal, autenticada) insere esta linha.
+    const { error: funcionarioError } = await supabase
+      .from('funcionarios')
+      .insert({
+        nome,
+        email,
+        user_id: signUpData.user.id,
+        loja_id: ownerId,
       });
 
-      if (signUpError) {
-        console.error('❌ Erro ao criar usuário:', signUpError);
-        throw signUpError;
-      }
-
-      if (!signUpData.user) {
-        console.error('❌ Nenhum usuário criado');
-        throw new Error('Falha ao criar usuário');
-      }
-
-      const novo_usuario_id = signUpData.user.id;
-      console.log('✅ AÇÃO 1 CONCLUÍDA - Usuario criado!');
-      console.log('🆔 novo_usuario.id:', novo_usuario_id);
-
-      // Aguardar um pouco para garantir que o perfil foi criado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Restaurar sessão do dono antes de inserir na tabela funcionarios
-      if (ownerSession) {
-        await supabase.auth.setSession({
-          access_token: ownerSession.access_token,
-          refresh_token: ownerSession.refresh_token
-        });
-        console.log('🔄 Sessão do dono restaurada para inserção');
-      }
-
-      // 🔹 AÇÃO 2: Inserir na tabela funcionarios
-      console.log('📝 AÇÃO 2: INSERIR NA TABELA FUNCIONARIOS');
-      console.log('📊 Dados para inserir:', {
-        nome: nome,
-        user_id: novo_usuario_id,
-        loja_id: ownerId
-      });
-
-      const { data: funcionarioData, error: funcionarioError } = await supabase
-        .from('funcionarios')
-        .insert({
-          nome: nome,
-          email: email,
-          user_id: novo_usuario_id,
-          loja_id: ownerId,
-        })
-        .select('*');
-
-      if (funcionarioError) {
-        console.error('❌ Erro ao inserir funcionário:', funcionarioError);
-        throw funcionarioError;
-      }
-
-      console.log('✅ AÇÃO 2 CONCLUÍDA - Funcionário inserido!');
-      console.log('📋 Dados inseridos:', funcionarioData);
-      console.log('🎉 CADASTRO COMPLETO!');
-
-    } catch (error) {
-      console.error('❌ Erro durante cadastro:', error);
-      
-      // Garantir que a sessão do dono seja restaurada em caso de erro
-      if (ownerSession) {
-        await supabase.auth.setSession({
-          access_token: ownerSession.access_token,
-          refresh_token: ownerSession.refresh_token
-        });
-        console.log('🔄 Sessão do dono restaurada após erro');
-      }
-      
-      throw error;
+    if (funcionarioError) {
+      console.error('Erro ao inserir funcionário:', funcionarioError);
+      throw funcionarioError;
     }
   };
 
@@ -285,7 +211,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(null);
   };
 
-  const updateProfile = async (data: Partial<Pick<Profile, 'name' | 'email' | 'telefone' | 'cidade' | 'bairro' | 'rua' | 'numero' | 'nome_loja' | 'ramo_atividade' | 'plan'>>) => {
+  const updateProfile = async (data: Partial<Pick<Profile, 'name' | 'email' | 'telefone' | 'cidade' | 'bairro' | 'rua' | 'numero' | 'nome_loja' | 'ramo_atividade'>>) => {
     if (!session?.user) throw new Error('Usuário não autenticado');
 
     const { error } = await supabase

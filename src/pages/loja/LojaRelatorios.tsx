@@ -60,12 +60,13 @@ export default function LojaRelatorios() {
           start: startOfMonth(now),
           end: endOfMonth(now)
         };
-      case 'last-month':
+      case 'last-month': {
         const lastMonth = subMonths(now, 1);
         return {
           start: startOfMonth(lastMonth),
           end: endOfMonth(lastMonth)
         };
+      }
       case 'last-3-months':
         return {
           start: subMonths(startOfMonth(now), 2),

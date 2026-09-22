@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toLocalISODate } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -130,7 +131,7 @@ export default function LojaNovaVenda() {
         commission: product.commission,
         payment_method: paymentMethod === 'parcelado' ? `${installments}x` : paymentMethod,
         juros_parcelamento: paymentMethod === 'parcelado' ? interestRate : 0,
-        sale_date: new Date().toISOString().split('T')[0],
+        sale_date: toLocalISODate(),
         numero_venda: numeroVenda
       }]);
 

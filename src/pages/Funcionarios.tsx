@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { parseLocalDate } from '@/lib/utils';
 
 // Usando o tipo correto da tabela funcionarios
 type Funcionario = {
@@ -221,7 +222,7 @@ const Funcionarios = () => {
     });
 
     // Ordenar por data (mais recente primeiro)
-    allSales.sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime());
+    allSales.sort((a, b) => parseLocalDate(b.sale_date).getTime() - parseLocalDate(a.sale_date).getTime());
     
     setAllEmployeeSales(allSales);
   };

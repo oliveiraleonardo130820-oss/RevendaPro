@@ -15,7 +15,7 @@ import { Trash2, Edit, Filter, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { cn, toLocalISODate } from '@/lib/utils';
 
 interface Despesa {
   id: string;
@@ -43,7 +43,7 @@ const Despesas = () => {
   const [valor, setValor] = useState<number | ''>('');
   const [data, setData] = useState(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return toLocalISODate(today);
   });
 
   // Load despesas
@@ -125,7 +125,7 @@ const Despesas = () => {
       setValor('');
       setData(() => {
         const today = new Date();
-        return today.toISOString().split('T')[0];
+        return toLocalISODate(today);
       });
 
       // Reload despesas
@@ -152,7 +152,7 @@ const Despesas = () => {
     setValor('');
     setData(() => {
       const today = new Date();
-      return today.toISOString().split('T')[0];
+      return toLocalISODate(today);
     });
   };
 
@@ -215,14 +215,15 @@ const Despesas = () => {
           const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
           return despesaDate.getMonth() === lastMonth && despesaDate.getFullYear() === lastMonthYear;
         });
-      case 'last3Months':
+      case 'last3Months': {
         const threeMonthsAgo = new Date(currentYear, currentMonth - 3, 1);
         return despesasData.filter(despesa => new Date(despesa.data + 'T00:00:00') >= threeMonthsAgo);
+      }
       case 'thisYear':
         return despesasData.filter(despesa => new Date(despesa.data + 'T00:00:00').getFullYear() === currentYear);
       default:
         // Handle individual months
-        if (monthMap.hasOwnProperty(selectedPeriod)) {
+        if (Object.prototype.hasOwnProperty.call(monthMap, selectedPeriod)) {
           const targetMonth = monthMap[selectedPeriod];
           return despesasData.filter(despesa => {
             const despesaDate = new Date(despesa.data + 'T00:00:00');

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/utils';
 
 interface Sale {
   id: string;
@@ -173,7 +174,7 @@ export default function LojaVendas() {
                 {filteredSales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell>
-                      {format(new Date(sale.sale_date), 'dd/MM/yyyy', { locale: ptBR })}
+                      {format(parseLocalDate(sale.sale_date), 'dd/MM/yyyy', { locale: ptBR })}
                     </TableCell>
                     <TableCell className="font-medium">{sale.products.name}</TableCell>
                     <TableCell>{sale.clients?.name || 'Cliente não informado'}</TableCell>

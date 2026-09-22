@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { toLocalISODate, parseLocalDate, dateWithDayClamped } from '@/lib/utils';
 
 // Types
 export interface CrediarioVenda {
@@ -143,7 +144,7 @@ export const CrediarioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const calcularParcelas = (valorRestante: number, numeroParcelas: number, dataVenda: string, diaVencimento: number) => {
     const valorParcela = valorRestante / numeroParcelas;
     const parcelas = [];
-    const dataVendaObj = new Date(dataVenda);
+    const dataVendaObj = parseLocalDate(dataVenda);
     
     // Calcular primeira data de vencimento baseada no dia escolhido
     const anoVenda = dataVendaObj.getFullYear();
@@ -152,19 +153,19 @@ export const CrediarioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     // A primeira parcela sempre vence no próximo mês
     // Esta é a regra padrão para crediário: primeira parcela no mês seguinte
-    let primeiraDataVencimento = new Date(anoVenda, mesVenda + 1, diaVencimento);
+    const primeiraDataVencimento = dateWithDayClamped(anoVenda, mesVenda + 1, diaVencimento);
 
     for (let i = 0; i < numeroParcelas; i++) {
-      const dataVencimento = new Date(
-        primeiraDataVencimento.getFullYear(), 
-        primeiraDataVencimento.getMonth() + i, 
+      const dataVencimento = dateWithDayClamped(
+        primeiraDataVencimento.getFullYear(),
+        primeiraDataVencimento.getMonth() + i,
         diaVencimento
       );
       
       parcelas.push({
         numero_parcela: i + 1,
         valor_parcela: valorParcela,
-        data_vencimento: dataVencimento.toISOString().split('T')[0],
+        data_vencimento: toLocalISODate(dataVencimento),
         status: 'pendente' as const,
         tipo: 'parcela' as const
       });
@@ -260,8 +261,8 @@ export const CrediarioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           crediario_venda_id: venda.id,
           numero_parcela: 0,
           valor_parcela: vendaData.valor_entrada,
-          data_vencimento: tomorrow.toISOString().split('T')[0],
-          data_pagamento: new Date().toISOString().split('T')[0],
+          data_vencimento: toLocalISODate(tomorrow),
+          data_pagamento: toLocalISODate(),
           status: 'pago' as const,
           tipo: 'entrada' as const
         });

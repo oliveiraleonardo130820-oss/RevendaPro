@@ -211,7 +211,7 @@ const SalesReport = () => {
     doc.text('Vendas por Forma de Pagamento:', 20, summaryStartY + 35);
     
     doc.setFont(undefined, 'normal');
-    let paymentStartY = summaryStartY + 45;
+    const paymentStartY = summaryStartY + 45;
     paymentMethods.forEach((method, index) => {
       const total = paymentTotals[method];
       if (total > 0) {

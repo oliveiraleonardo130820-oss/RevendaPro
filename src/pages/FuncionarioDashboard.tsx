@@ -12,7 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, parseLocalDate, toLocalISODate } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, Plus, Users, Package, ShoppingCart, BarChart3, AlertCircle, Search, User, Phone, Mail, DollarSign, ShoppingBag, CheckCircle, FileText, AlertTriangle, Percent, Archive, Edit, Trash2 } from 'lucide-react';
@@ -430,7 +430,7 @@ const FuncionarioDashboard = () => {
         total_value: totalValue,
         commission,
         payment_method: finalPaymentMethod,
-        sale_date: new Date().toISOString().split('T')[0],
+        sale_date: toLocalISODate(),
       });
 
       const { data: saleData, error } = await supabase
@@ -444,7 +444,7 @@ const FuncionarioDashboard = () => {
           total_value: totalValue,
           commission,
           payment_method: finalPaymentMethod,
-          sale_date: saleDate.toISOString().split('T')[0],
+          sale_date: toLocalISODate(saleDate),
           observacoes: observacoes.trim() || null,
           juros_parcelamento: paymentMethod === 'Parcelas' ? jurosParcelamento : 0,
         })
@@ -462,7 +462,7 @@ const FuncionarioDashboard = () => {
         const installmentNumber = parseInt(selectedInstallments.replace('x', ''));
         const parcelas = [];
         const parcelaValor = parseFloat((totalValue / installmentNumber).toFixed(2));
-        const saleDate = new Date().toISOString().split('T')[0];
+        const saleDate = toLocalISODate();
         
         // Parse the sale date
         const [year, month, day] = saleDate.split('-').map(Number);
@@ -681,7 +681,7 @@ const FuncionarioDashboard = () => {
       quantity: sale.quantity,
       paymentMethod: sale.payment_method || '',
       selectedInstallments: sale.payment_method && sale.payment_method.includes('x') ? sale.payment_method : '',
-      saleDate: new Date(sale.sale_date),
+      saleDate: parseLocalDate(sale.sale_date),
       observacoes: sale.observacoes || '',
       jurosParcelamento: sale.juros_parcelamento || 0
     });
@@ -718,7 +718,7 @@ const FuncionarioDashboard = () => {
           total_value: totalValue,
           commission,
           payment_method: finalPaymentMethod,
-          sale_date: editSaleData.saleDate.toISOString().split('T')[0],
+          sale_date: toLocalISODate(editSaleData.saleDate),
           observacoes: editSaleData.observacoes.trim() || null,
           juros_parcelamento: editSaleData.paymentMethod === 'Parcelas' ? editSaleData.jurosParcelamento : 0,
         })
@@ -1289,7 +1289,7 @@ const FuncionarioDashboard = () => {
                       {sales.map((sale) => (
                         <TableRow key={sale.id}>
                           <TableCell>
-                            {new Date(sale.sale_date).toLocaleDateString('pt-BR')}
+                            {parseLocalDate(sale.sale_date).toLocaleDateString('pt-BR')}
                           </TableCell>
                           <TableCell>{sale.products?.name}</TableCell>
                           <TableCell>{sale.clients?.name || 'Sem cliente'}</TableCell>
@@ -1473,7 +1473,7 @@ const FuncionarioDashboard = () => {
                     
                     // Sort sales by date (most recent first)
                     const sortedClientSales = [...clientSales].sort((a, b) => 
-                      new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime()
+                      parseLocalDate(b.sale_date).getTime() - parseLocalDate(a.sale_date).getTime()
                     );
                     
                     return (

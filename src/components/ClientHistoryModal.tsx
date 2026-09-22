@@ -15,6 +15,7 @@ import { Calendar, DollarSign, Edit, Trash2, Filter } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import EditSaleModal from './EditSaleModal';
 import { toast } from 'sonner';
+import { parseLocalDate } from '@/lib/utils';
 
 interface Client {
   id: string;
@@ -57,9 +58,9 @@ const ClientHistoryModal = ({ open, onClose, client }: ClientHistoryModalProps) 
   const filteredSales = clientSales.filter(sale => {
     if (!dateFilter.startDate && !dateFilter.endDate) return true;
     
-    const saleDate = new Date(sale.sale_date);
-    const start = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
-    const end = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
+    const saleDate = parseLocalDate(sale.sale_date);
+    const start = dateFilter.startDate ? parseLocalDate(dateFilter.startDate) : null;
+    const end = dateFilter.endDate ? parseLocalDate(dateFilter.endDate) : null;
 
     if (start && saleDate < start) return false;
     if (end && saleDate > end) return false;
@@ -254,7 +255,7 @@ const ClientHistoryModal = ({ open, onClose, client }: ClientHistoryModalProps) 
               <div className="space-y-4">
                 {/* Vendas Normais */}
                 {filteredSales
-                  .sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
+                  .sort((a, b) => parseLocalDate(b.sale_date).getTime() - parseLocalDate(a.sale_date).getTime())
                   .map((sale) => {
                   const status = getSaleStatus(sale);
                   const installmentCount = getInstallmentCount(sale.payment_method);
@@ -356,7 +357,7 @@ const ClientHistoryModal = ({ open, onClose, client }: ClientHistoryModalProps) 
                 
                 {/* Vendas de Crediário */}
                 {clientCrediarioSales
-                  .sort((a, b) => new Date(b.data_venda).getTime() - new Date(a.data_venda).getTime())
+                  .sort((a, b) => parseLocalDate(b.data_venda).getTime() - parseLocalDate(a.data_venda).getTime())
                   .map((crediarioVenda) => {
                     const crediarioInstallments = clientCrediarioInstallments.filter(
                       parcela => parcela.crediario_venda_id === crediarioVenda.id

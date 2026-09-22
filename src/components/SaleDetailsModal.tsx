@@ -10,6 +10,7 @@ import { useData } from '@/contexts/DataContext';
 import EditPaymentModal from './EditPaymentModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { toLocalISODate } from '@/lib/utils';
 interface SaleDetailsModalProps {
   open: boolean;
   onClose: () => void;
@@ -69,7 +70,7 @@ const SaleDetailsModal = ({
           observacoes: observacoes,
           data_valor_pago: dataValorPago || null,
           status: valorPago > 0 ? 'pago' : 'pendente',
-          data_pagamento: valorPago > 0 ? new Date().toISOString().split('T')[0] : null,
+          data_pagamento: valorPago > 0 ? toLocalISODate() : null,
           updated_at: new Date().toISOString()
         }).eq('id', id);
       } else {
@@ -77,7 +78,7 @@ const SaleDetailsModal = ({
         await supabase.from('parcelas_venda').update({
           valor_pago: valorPago,
           status: valorPago > 0 ? 'pago' : 'pendente',
-          data_pagamento: valorPago > 0 ? new Date().toISOString().split('T')[0] : null,
+          data_pagamento: valorPago > 0 ? toLocalISODate() : null,
           updated_at: new Date().toISOString()
         }).eq('id', id);
       }

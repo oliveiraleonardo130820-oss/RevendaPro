@@ -26,6 +26,7 @@ import {
   Search,
   AlertTriangle,
 } from 'lucide-react';
+import { parseLocalDate, toLocalISODate } from '@/lib/utils';
 
 const NewSale = () => {
   const { products, clients, sales, installments, addSale } = useData();
@@ -85,7 +86,7 @@ const NewSale = () => {
   
   const [formData, setFormData] = useState({
     quantity: '1',
-    date: new Date().toISOString().split('T')[0],
+    date: toLocalISODate(),
     paymentMethod: '',
     juros_parcelamento: '0',
     desconto: '0',
@@ -412,7 +413,7 @@ const NewSale = () => {
           if (installmentMatch) {
             const numberOfInstallments = parseInt(installmentMatch[1]);
             const installmentValue = mainSaleData.total_value / numberOfInstallments;
-            const baseDate = new Date(mainSaleData.sale_date);
+            const baseDate = parseLocalDate(mainSaleData.sale_date);
             
             for (let i = 1; i <= numberOfInstallments; i++) {
               const dueDate = new Date(baseDate);
@@ -424,7 +425,7 @@ const NewSale = () => {
                   venda_id: saleData.id,
                   numero_da_parcela: i,
                   valor_da_parcela: installmentValue,
-                  data_de_vencimento: dueDate.toISOString().split('T')[0],
+                  data_de_vencimento: toLocalISODate(dueDate),
                   user_id: user?.id,
                   loja_id: user?.loja_id || user?.id,
                   numero_venda: numeroVenda,

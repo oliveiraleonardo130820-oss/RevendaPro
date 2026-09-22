@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/utils';
 
 interface CrediarioVenda {
   id: string;
@@ -201,7 +202,7 @@ export default function LojaCrediario() {
                 {filteredVendas.map((venda) => (
                   <TableRow key={venda.id}>
                     <TableCell>
-                      {format(new Date(venda.data_venda), 'dd/MM/yyyy', { locale: ptBR })}
+                      {format(parseLocalDate(venda.data_venda), 'dd/MM/yyyy', { locale: ptBR })}
                     </TableCell>
                     <TableCell className="font-medium">
                       {venda.clients?.name || 'Cliente não informado'}

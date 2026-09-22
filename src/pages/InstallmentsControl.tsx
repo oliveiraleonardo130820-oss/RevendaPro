@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Search, Calendar, Edit } from 'lucide-react';
 import EditPaymentModal from '@/components/EditPaymentModal';
 import { supabase } from '@/integrations/supabase/client';
+import { parseLocalDate } from '@/lib/utils';
 
 type FilterType = 'overdue' | 'pending' | 'paid' | 'partial' | 'all';
 

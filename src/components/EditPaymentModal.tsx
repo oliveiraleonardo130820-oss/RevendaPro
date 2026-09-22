@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { toLocalISODate } from '@/lib/utils';
 
 interface EditPaymentModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
     if (installment) {
       setValorPago(installment.valor_pago?.toString() || '0');
       setObservacoes(installment.observacoes || '');
-      setDataValorPago(installment.data_valor_pago || new Date().toISOString().split('T')[0]);
+      setDataValorPago(installment.data_valor_pago || toLocalISODate());
     }
   }, [installment]);
 

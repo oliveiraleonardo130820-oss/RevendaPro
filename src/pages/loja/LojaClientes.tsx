@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ClientHistoryModal from '@/components/ClientHistoryModal';
+import { parseLocalDate } from '@/lib/utils';
 
 interface Client {
   id: string;
@@ -686,7 +687,7 @@ export default function LojaClientes() {
             
             // Sort sales by date (most recent first)
             const sortedClientSales = [...clientSales].sort((a, b) => 
-              new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime()
+              parseLocalDate(b.sale_date).getTime() - parseLocalDate(a.sale_date).getTime()
             );
             
             return (

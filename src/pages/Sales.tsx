@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { cn, parseLocalDate } from '@/lib/utils';
 import EditSaleModal from '@/components/EditSaleModal';
 import SaleDetailsModal from '@/components/SaleDetailsModal';
 import CrediarioDetalhesModal from '@/components/CrediarioDetalhesModal';
@@ -216,17 +216,19 @@ const Sales = () => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
         });
-      case 'lastMonth':
+      case 'lastMonth': {
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         return salesData.filter(sale => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === lastMonth && saleDate.getFullYear() === lastMonthYear;
         });
-      case 'last3Months':
+      }
+      case 'last3Months': {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         return salesData.filter(sale => new Date(sale.sale_date + 'T00:00:00') >= threeMonthsAgo);
+      }
       case 'thisYear':
         return salesData.filter(sale => new Date(sale.sale_date + 'T00:00:00').getFullYear() === currentYear);
       case 'january':
@@ -240,12 +242,13 @@ const Sales = () => {
       case 'september':
       case 'october':
       case 'november':
-      case 'december':
+      case 'december': {
         const targetMonth = monthMap[selectedPeriod];
         return salesData.filter(sale => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === targetMonth && saleDate.getFullYear() === currentYear;
         });
+      }
       default:
         return salesData;
     }
@@ -255,7 +258,7 @@ const Sales = () => {
   const filteredSales = getFilteredSalesByPeriod(allSales).filter(sale => {
     // Filtro de período
     if (startDate && endDate) {
-      const saleDate = new Date(sale.sale_date);
+      const saleDate = parseLocalDate(sale.sale_date);
       if (saleDate < startDate || saleDate > endDate) return false;
     }
 
@@ -277,7 +280,7 @@ const Sales = () => {
     return true;
   }).sort((a, b) => {
     // Ordenar por data em ordem decrescente (mais recente primeiro)
-    const dateComparison = new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime();
+    const dateComparison = parseLocalDate(b.sale_date).getTime() - parseLocalDate(a.sale_date).getTime();
     if (dateComparison !== 0) return dateComparison;
 
     // Se as datas são iguais, ordenar por cliente alfabeticamente
@@ -437,17 +440,19 @@ const Sales = () => {
           const vendaDate = new Date(venda.data_venda + 'T00:00:00');
           return vendaDate.getMonth() === currentMonth && vendaDate.getFullYear() === currentYear;
         });
-      case 'lastMonth':
+      case 'lastMonth': {
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         return vendasData.filter(venda => {
           const vendaDate = new Date(venda.data_venda + 'T00:00:00');
           return vendaDate.getMonth() === lastMonth && vendaDate.getFullYear() === lastMonthYear;
         });
-      case 'last3Months':
+      }
+      case 'last3Months': {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         return vendasData.filter(venda => new Date(venda.data_venda + 'T00:00:00') >= threeMonthsAgo);
+      }
       case 'thisYear':
         return vendasData.filter(venda => new Date(venda.data_venda + 'T00:00:00').getFullYear() === currentYear);
       case 'january':
@@ -461,12 +466,13 @@ const Sales = () => {
       case 'september':
       case 'october':
       case 'november':
-      case 'december':
+      case 'december': {
         const targetMonth = monthMap[crediarioSelectedPeriod];
         return vendasData.filter(venda => {
           const vendaDate = new Date(venda.data_venda + 'T00:00:00');
           return vendaDate.getMonth() === targetMonth && vendaDate.getFullYear() === currentYear;
         });
+      }
       default:
         return vendasData;
     }
@@ -481,7 +487,7 @@ const Sales = () => {
 
     // Filtro de data de início e fim
     if (crediarioStartDate && crediarioEndDate) {
-      const vendaDate = new Date(venda.data_venda);
+      const vendaDate = parseLocalDate(venda.data_venda);
       if (vendaDate < crediarioStartDate || vendaDate > crediarioEndDate) return false;
     }
 

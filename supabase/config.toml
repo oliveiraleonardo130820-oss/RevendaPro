@@ -53,3 +53,9 @@ verify_jwt = true
 
 [functions.kiwify-webhook]
 verify_jwt = false
+
+[functions.cakto-webhook]
+verify_jwt = false
+
+[functions.check-subscription-expiry]
+verify_jwt = true

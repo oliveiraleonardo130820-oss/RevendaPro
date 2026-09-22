@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toLocalISODate } from '@/lib/utils';
 
 interface Parcela {
   id: string;
@@ -104,7 +105,7 @@ export default function LojaControleParcelas() {
         .from('parcelas_crediario')
         .update({
           status: 'pago',
-          data_pagamento: new Date().toISOString().split('T')[0]
+          data_pagamento: toLocalISODate()
         })
         .eq('id', parcelaId);
 

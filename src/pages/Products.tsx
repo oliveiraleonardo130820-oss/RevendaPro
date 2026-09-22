@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, parseLocalDate } from '@/lib/utils';
 import {
   Package,
   Plus,
@@ -125,17 +125,19 @@ const Products = () => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
         });
-      case 'lastMonth':
+      case 'lastMonth': {
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         return salesData.filter(sale => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === lastMonth && saleDate.getFullYear() === lastMonthYear;
         });
-      case 'last3Months':
+      }
+      case 'last3Months': {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         return salesData.filter(sale => new Date(sale.sale_date + 'T00:00:00') >= threeMonthsAgo);
+      }
       case 'thisYear':
         return salesData.filter(sale => new Date(sale.sale_date + 'T00:00:00').getFullYear() === currentYear);
       case 'january':
@@ -149,12 +151,13 @@ const Products = () => {
       case 'september':
       case 'october':
       case 'november':
-      case 'december':
+      case 'december': {
         const targetMonth = monthMap[analyticsSelectedPeriod];
         return salesData.filter(sale => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === targetMonth && saleDate.getFullYear() === currentYear;
         });
+      }
       default:
         return salesData;
     }
@@ -228,7 +231,7 @@ const Products = () => {
     // Filtro por data específica
     if (analyticsStartDate && analyticsEndDate) {
       filteredSales = filteredSales.filter(sale => {
-        const saleDate = new Date(sale.sale_date);
+        const saleDate = parseLocalDate(sale.sale_date);
         return saleDate >= analyticsStartDate && saleDate <= analyticsEndDate;
       });
     }
@@ -886,7 +889,7 @@ const Products = () => {
                               return (
                                 <TableRow key={sale.id}>
                                   <TableCell>
-                                    {new Date(new Date(sale.sale_date).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}
+                                    {parseLocalDate(sale.sale_date).toLocaleDateString('pt-BR')}
                                   </TableCell>
                                   <TableCell>{clientName}</TableCell>
                                   <TableCell>{sale.quantity}</TableCell>

@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { cn } from '@/lib/utils';
+import { cn, parseLocalDate } from '@/lib/utils';
 interface ProductSaleData {
   quantity: number;
   revenue: number;
@@ -87,17 +87,19 @@ const Reports = () => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
         });
-      case 'lastMonth':
+      case 'lastMonth': {
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         return sales.filter(sale => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === lastMonth && saleDate.getFullYear() === lastMonthYear;
         });
-      case 'last3Months':
+      }
+      case 'last3Months': {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         return sales.filter(sale => new Date(sale.sale_date + 'T00:00:00') >= threeMonthsAgo);
+      }
       case 'thisYear':
         return sales.filter(sale => new Date(sale.sale_date + 'T00:00:00').getFullYear() === currentYear);
       case 'january':
@@ -111,12 +113,13 @@ const Reports = () => {
       case 'september':
       case 'october':
       case 'november':
-      case 'december':
+      case 'december': {
         const targetMonth = monthMap[selectedPeriod];
         return sales.filter(sale => {
           const saleDate = new Date(sale.sale_date + 'T00:00:00');
           return saleDate.getMonth() === targetMonth && saleDate.getFullYear() === currentYear;
         });
+      }
       default:
         return sales;
     }
@@ -148,17 +151,19 @@ const Reports = () => {
           const despesaDate = new Date(despesa.data + 'T00:00:00');
           return despesaDate.getMonth() === currentMonth && despesaDate.getFullYear() === currentYear;
         });
-      case 'lastMonth':
+      case 'lastMonth': {
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
         return despesas.filter(despesa => {
           const despesaDate = new Date(despesa.data + 'T00:00:00');
           return despesaDate.getMonth() === lastMonth && despesaDate.getFullYear() === lastMonthYear;
         });
-      case 'last3Months':
+      }
+      case 'last3Months': {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         return despesas.filter(despesa => new Date(despesa.data + 'T00:00:00') >= threeMonthsAgo);
+      }
       case 'thisYear':
         return despesas.filter(despesa => new Date(despesa.data + 'T00:00:00').getFullYear() === currentYear);
       case 'january':
@@ -172,12 +177,13 @@ const Reports = () => {
       case 'september':
       case 'october':
       case 'november':
-      case 'december':
+      case 'december': {
         const targetMonth = monthMap[selectedPeriod];
         return despesas.filter(despesa => {
           const despesaDate = new Date(despesa.data + 'T00:00:00');
           return despesaDate.getMonth() === targetMonth && despesaDate.getFullYear() === currentYear;
         });
+      }
       default:
         return despesas;
     }
@@ -290,14 +296,16 @@ const Reports = () => {
       switch (selectedPeriod) {
         case 'thisMonth':
           return (date: Date) => date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-        case 'lastMonth':
+        case 'lastMonth': {
           const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
           const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
           return (date: Date) => date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear;
-        case 'last3Months':
+        }
+        case 'last3Months': {
           const threeMonthsAgo = new Date();
           threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
           return (date: Date) => date >= threeMonthsAgo;
+        }
         case 'thisYear':
           return (date: Date) => date.getFullYear() === currentYear;
         case 'january':
@@ -311,9 +319,10 @@ const Reports = () => {
         case 'september':
         case 'october':
         case 'november':
-        case 'december':
+        case 'december': {
           const targetMonth = monthMap[selectedPeriod];
           return (date: Date) => date.getMonth() === targetMonth && date.getFullYear() === currentYear;
+        }
         default:
           return () => true;
       }
@@ -333,14 +342,14 @@ const Reports = () => {
     // 2. Parcelas com status 'pago' no período selecionado
     const parcelasVendaPagas = installments.filter(installment => {
       if (installment.status !== 'pago' || !installment.data_pagamento) return false;
-      const paymentDate = new Date(installment.data_pagamento);
+      const paymentDate = parseLocalDate(installment.data_pagamento);
       return dateFilter(paymentDate);
     });
 
   // 3. Parcelas do crediário com status 'pago' no período selecionado
     const parcelasCrediarioPagas = parcelasCrediario.filter(parcela => {
       if (parcela.status !== 'pago' || !parcela.data_pagamento) return false;
-      const paymentDate = new Date(parcela.data_pagamento);
+      const paymentDate = parseLocalDate(parcela.data_pagamento);
       return dateFilter(paymentDate);
     });
 
@@ -355,7 +364,7 @@ const Reports = () => {
       
       // Filtrar por data_pagamento se existir
       const paymentDate = installment.data_pagamento 
-        ? new Date(installment.data_pagamento)
+        ? parseLocalDate(installment.data_pagamento)
         : null;
       
       if (!paymentDate) return false;
@@ -367,7 +376,7 @@ const Reports = () => {
       
       // Filtrar por data_pagamento se existir
       const paymentDate = parcela.data_pagamento 
-        ? new Date(parcela.data_pagamento)
+        ? parseLocalDate(parcela.data_pagamento)
         : null;
       
       if (!paymentDate) return false;
@@ -442,14 +451,14 @@ const Reports = () => {
 
   // Calcular dados para o relatório de vendas
   const filteredSalesReport = startDate && endDate ? sales.filter(sale => {
-    const saleDate = new Date(sale.sale_date);
+    const saleDate = parseLocalDate(sale.sale_date);
     return saleDate >= startDate && saleDate <= endDate;
   }) : [];
 
   // Filtrar vendas de crediário por período - apenas vendas quitadas
   const { vendas: crediarioVendas } = useCrediario();
   const filteredCrediarioReport = startDate && endDate ? crediarioVendas.filter(venda => {
-    const vendaDate = new Date(venda.data_venda);
+    const vendaDate = parseLocalDate(venda.data_venda);
     const isInPeriod = vendaDate >= startDate && vendaDate <= endDate;
     const isQuitada = venda.status === 'quitado';
     return isInPeriod && isQuitada;
@@ -700,7 +709,7 @@ const Reports = () => {
     doc.setFont(undefined, 'bold');
     doc.text('Vendas por Forma de Pagamento:', 20, summaryStartY + 35);
     doc.setFont(undefined, 'normal');
-    let paymentStartY = summaryStartY + 45;
+    const paymentStartY = summaryStartY + 45;
     paymentMethods.forEach((method, index) => {
       const total = paymentTotals[method];
       if (total > 0) {

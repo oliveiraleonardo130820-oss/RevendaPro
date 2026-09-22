@@ -15,6 +15,7 @@ import ClientSearchModal from '@/components/ClientSearchModal';
 import ProductSearchModal from '@/components/ProductSearchModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate, dateWithDayClamped } from '@/lib/utils';
 
 export default function NovaVendaCrediario() {
   const navigate = useNavigate();
@@ -115,25 +116,21 @@ export default function NovaVendaCrediario() {
 
   const calcularVencimentos = () => {
     const vencimentos = [];
-    const dataVendaObj = new Date(formData.data_venda);
+    const dataVendaObj = parseLocalDate(formData.data_venda);
     const diaVencimento = parseInt(formData.dia_vencimento);
     
     // Calcular primeira data de vencimento baseada no dia escolhido
     const anoVenda = dataVendaObj.getFullYear();
     const mesVenda = dataVendaObj.getMonth();
     
-    // A primeira parcela vence no dia escolhido do mês atual ou próximo
-    let primeiraDataVencimento = new Date(anoVenda, mesVenda, diaVencimento);
-    
-    // Se o dia já passou no mês atual, vence no próximo mês
-    if (primeiraDataVencimento <= dataVendaObj) {
-      primeiraDataVencimento = new Date(anoVenda, mesVenda + 1, diaVencimento);
-    }
+    // Mesma regra usada ao gravar as parcelas (CrediarioContext.calcularParcelas):
+    // a primeira parcela sempre vence no mês seguinte à venda.
+    const primeiraDataVencimento = dateWithDayClamped(anoVenda, mesVenda + 1, diaVencimento);
 
     for (let i = 0; i < numeroParcelas; i++) {
-      const vencimento = new Date(
-        primeiraDataVencimento.getFullYear(), 
-        primeiraDataVencimento.getMonth() + i, 
+      const vencimento = dateWithDayClamped(
+        primeiraDataVencimento.getFullYear(),
+        primeiraDataVencimento.getMonth() + i,
         diaVencimento
       );
       vencimentos.push(vencimento);

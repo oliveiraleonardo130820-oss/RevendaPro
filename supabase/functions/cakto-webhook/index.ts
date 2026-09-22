@@ -6,6 +6,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Comparação em tempo constante para não vazar o segredo por diferença de tempo
+const safeEqual = (a: string, b: string) => {
+  const enc = new TextEncoder()
+  const x = enc.encode(a)
+  const y = enc.encode(b)
+  if (x.length !== y.length) return false
+  let diff = 0
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i]
+  return diff === 0
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -30,17 +41,20 @@ serve(async (req) => {
 
     // Parse the webhook payload
     const payload = await req.json()
-    console.log('Received Cakto webhook:', JSON.stringify(payload, null, 2))
 
-    // Verify webhook secret if provided by Cakto
-    if (payload.secret && payload.secret !== webhookSecret) {
-      console.error('Invalid webhook secret')
-      return new Response('Unauthorized', { 
+    // O segredo é OBRIGATÓRIO (no corpo ou no header). Sem isso qualquer pessoa
+    // poderia liberar o plano premium para qualquer e-mail.
+    const receivedSecret = String(payload?.secret ?? req.headers.get('x-webhook-secret') ?? '')
+    if (!receivedSecret || !safeEqual(receivedSecret, webhookSecret)) {
+      console.error('Invalid or missing webhook secret')
+      return new Response('Unauthorized', {
         status: 401,
-        headers: corsHeaders 
+        headers: corsHeaders
       })
     }
-    
+
+    console.log('Received Cakto webhook:', payload.event || payload.status)
+
     // Handle payment success events from Cakto, Kirvano and Kiwify
     if (payload.event === 'purchase_approved' || 
         payload.event === 'subscription_created' || 
@@ -131,7 +145,7 @@ serve(async (req) => {
     console.error('Error processing webhook:', error)
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      message: error.message 
+      message: error instanceof Error ? error.message : String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

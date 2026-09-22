@@ -15,6 +15,7 @@ import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ClientHistoryModal from '@/components/ClientHistoryModal';
+import { parseLocalDate } from '@/lib/utils';
 const Clients = () => {
   const {
     clients,
@@ -642,7 +643,7 @@ const Clients = () => {
         const clientCrediarioInstallments = getClientCrediarioInstallments(client.id);
 
         // Sort sales by date (most recent first)
-        const sortedClientSales = [...clientSales].sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime());
+        const sortedClientSales = [...clientSales].sort((a, b) => parseLocalDate(b.sale_date).getTime() - parseLocalDate(a.sale_date).getTime());
         return <Card key={client.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -839,7 +840,7 @@ const Clients = () => {
                   })}
                           
                           {/* Vendas de Crediário */}
-                          {clientCrediarioSales.sort((a, b) => new Date(b.data_venda).getTime() - new Date(a.data_venda).getTime()).map(crediarioVenda => {
+                          {clientCrediarioSales.sort((a, b) => parseLocalDate(b.data_venda).getTime() - parseLocalDate(a.data_venda).getTime()).map(crediarioVenda => {
                     const crediarioInstallments = clientCrediarioInstallments.filter(parcela => parcela.crediario_venda_id === crediarioVenda.id);
                     return <div key={`crediario-${crediarioVenda.id}`} className="border rounded-lg p-4 space-y-3 bg-purple-50">
                                 {/* Sale Header */}

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 import { Database } from '@/integrations/supabase/types';
+import { parseLocalDate } from '@/lib/utils';
 
 type Client = Database['public']['Tables']['clients']['Row'];
 type Product = Database['public']['Tables']['products']['Row'];
@@ -637,10 +638,17 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Update client total purchases if client exists
     if (saleData.client_id) {
+      // Acumula no total do cliente (antes o total era sobrescrito pelo valor desta venda)
+      const { data: currentClient } = await supabase
+        .from('clients')
+        .select('total_purchases')
+        .eq('id', saleData.client_id)
+        .maybeSingle();
+
       const { error: updateError } = await supabase
         .from('clients')
         .update({
-          total_purchases: saleData.total_value
+          total_purchases: Number(currentClient?.total_purchases || 0) + Number(saleData.total_value)
         })
         .eq('id', saleData.client_id);
 
@@ -735,7 +743,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     
     // 1. Vendas à vista (dinheiro, cartão débito, cartão crédito, PIX)
     const vendasAvista = sales.filter(sale => {
-      const saleDate = new Date(sale.sale_date);
+      const saleDate = parseLocalDate(sale.sale_date);
       return saleDate.getMonth() === currentMonth && 
              saleDate.getFullYear() === currentYear &&
              paymentMethodsAvista.includes(sale.payment_method || '');
@@ -753,7 +761,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const parcelasCrediarioPagas = parcelasCrediarioToUse.filter(parcela => {
       // Se data_pagamento existir, usar ela; senão usar data_vencimento
       const dateToCheck = parcela.data_pagamento ? 
-        new Date(parcela.data_pagamento) : 
+        parseLocalDate(parcela.data_pagamento) : 
         new Date(parcela.data_vencimento);
       
       return dateToCheck.getMonth() === currentMonth && 
@@ -791,7 +799,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const totalSales = totalVendasAvista + totalParcelasPagas + totalCrediarioPago;
     const totalCommission = comissaoVendasAvista + comissaoParcelasPagas + comissaoCrediario;
     const salesCount = vendasAvista.length + parcelasPagas.length + parcelasCrediarioPagas.length;
-    const goalProgress = (totalSales / monthlyGoal) * 100;
+    const goalProgress = monthlyGoal > 0 ? (totalSales / monthlyGoal) * 100 : 0;
 
     return { totalSales, totalCommission, salesCount, goalProgress };
   };

@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { parseLocalDate, toLocalISODate } from '@/lib/utils';
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
@@ -75,7 +76,7 @@ export default function LojaDetalhes() {
   const [despesaData, setDespesaData] = useState({
     nome: '',
     valor: '',
-    data: new Date().toISOString().split('T')[0],
+    data: toLocalISODate(),
     observacoes: ''
   });
   const fetchLoja = async () => {
@@ -216,7 +217,7 @@ export default function LojaDetalhes() {
       setDespesaData({
         nome: '',
         valor: '',
-        data: new Date().toISOString().split('T')[0],
+        data: toLocalISODate(),
         observacoes: ''
       });
       setIsDespesaDialogOpen(false);
@@ -623,7 +624,7 @@ export default function LojaDetalhes() {
                         <TableCell>{despesa.nome}</TableCell>
                         <TableCell>R$ {Number(despesa.valor).toFixed(2)}</TableCell>
                         <TableCell>
-                          {format(new Date(despesa.data), 'dd/MM/yyyy', {
+                          {format(parseLocalDate(despesa.data), 'dd/MM/yyyy', {
                       locale: ptBR
                     })}
                         </TableCell>
